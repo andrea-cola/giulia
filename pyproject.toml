@@ -71,9 +71,6 @@ ignore = [
     "B008",  # function calls in default arguments (Depends-style patterns)
 ]
 
-[tool.ruff.lint.isort]
-known-first-party = ["giulia"]
-
 [tool.mypy]
 python_version = "3.12"
 ignore_missing_imports = true
