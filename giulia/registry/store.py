@@ -5,11 +5,10 @@ backend for :class:`~giulia.registry.Registry`.  The protocol is
 :func:`runtime_checkable <typing.runtime_checkable>`, so you can verify
 conformance with ``isinstance(my_store, AgentStore)``.
 
-Built-in implementations live outside this library (they carry their own
-infrastructure dependencies):
+The built-in Cloud SQL implementation lives in this package:
 
-- ``RedisAgentStore``     — dw-ai-brain/registry  (Redis + RediSearch)
-- ``CloudSQLAgentStore``  — dw-ai-brain/registry  (PostgreSQL + pgvector)
+- :class:`~giulia.registry.CloudSQLAgentStore` — PostgreSQL + pgvector,
+  backed by :class:`~giulia.providers.database.CloudSqlConnector`.
 
 Writing a custom backend
 ------------------------

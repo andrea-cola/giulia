@@ -27,13 +27,17 @@ Quick start
 
 Modules
 -------
-- ``models``   — Pydantic models: ``AgentAddr``, ``AgentAddrCreate``,
+- ``models``        — Pydantic models: ``AgentAddr``, ``AgentAddrCreate``,
   ``AgentAddrUpdate``, ``AgentTier``, ``AgentRegistryBrief``
-- ``store``    — ``AgentStore`` protocol (the interface backends implement)
-- ``registry`` — ``Registry`` facade (async context manager wrapping any store)
-- ``tools``    — ADK tools for registry search and remote agent invocation
+- ``store``         — ``AgentStore`` protocol (the interface backends implement)
+- ``registry``      — ``Registry`` facade (async context manager wrapping any store)
+- ``cloudsql_store``— ``CloudSQLAgentStore``: built-in Cloud SQL + pgvector backend
+- ``embeddings``    — ``EmbeddingModel`` and ``build_agent_text`` for Vertex AI embeddings
+- ``tools``         — ADK tools for registry search and remote agent invocation
 """
 
+from giulia.registry.cloudsql_store import CloudSQLAgentStore  # noqa: F401
+from giulia.registry.embeddings import EmbeddingModel, build_agent_text  # noqa: F401
 from giulia.registry.models import (  # noqa: F401
     AgentAddr,
     AgentAddrCreate,
@@ -54,6 +58,11 @@ __all__ = [
     "Registry",
     # Storage protocol
     "AgentStore",
+    # Built-in backends
+    "CloudSQLAgentStore",
+    # Embeddings
+    "EmbeddingModel",
+    "build_agent_text",
     # Models
     "AgentTier",
     "AgentAddr",
