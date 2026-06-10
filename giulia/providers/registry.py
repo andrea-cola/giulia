@@ -1,6 +1,6 @@
 """Global provider registry.
 
-Call ``configure()`` once before ``GiuliaAgent.create_app()`` to override
+Call ``configure()`` once before ``Agent.create_app()`` to override
 any default GCP provider with an alternative implementation.
 
 All getters (``get_secrets``, ``get_kms``, ``get_redis_auth``, ``get_database``)
@@ -33,7 +33,7 @@ def configure(
 ) -> None:
     """Override one or more cloud provider implementations.
 
-    Call this once at application startup, before ``GiuliaAgent.create_app()``.
+    Call this once at application startup, before ``Agent.create_app()``.
     Any provider left as ``None`` retains its current value (or the GCP default
     if it has never been set).
 

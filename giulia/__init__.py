@@ -55,25 +55,31 @@ def __getattr__(name: str) -> Any:
 
         return register_private_agent
 
+    # Registry facade
+    if name == "Registry":
+        from .registry.registry import Registry
+
+        return Registry
+
     # Registry models & protocol
     if name == "AgentTier":
-        from .agents.registry.models import AgentTier
+        from .registry.models import AgentTier
 
         return AgentTier
     if name == "AgentAddr":
-        from .agents.registry.models import AgentAddr
+        from .registry.models import AgentAddr
 
         return AgentAddr
     if name == "AgentAddrCreate":
-        from .agents.registry.models import AgentAddrCreate
+        from .registry.models import AgentAddrCreate
 
         return AgentAddrCreate
     if name == "AgentAddrUpdate":
-        from .agents.registry.models import AgentAddrUpdate
+        from .registry.models import AgentAddrUpdate
 
         return AgentAddrUpdate
     if name == "AgentStore":
-        from .agents.registry.agent_store import AgentStore
+        from .registry.store import AgentStore
 
         return AgentStore
 
@@ -108,6 +114,8 @@ __all__ = [
     "discover_agents",
     "resolve_agent",
     "register_private_agent",
+    # Registry facade
+    "Registry",
     # Registry models & protocol
     "AgentTier",
     "AgentAddr",

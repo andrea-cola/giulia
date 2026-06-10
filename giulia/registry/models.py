@@ -1,10 +1,21 @@
 """Pydantic models for the agent registry.
 
-Canonical shapes (AgentAddr, AgentTier, AgentAddrCreate, AgentAddrUpdate) are
-defined here so that both the registry service and any giulia-based consumer
-share the same types without a circular dependency.
+These are the canonical data shapes shared between the registry service
+and every giulia-based agent.  Import them from here (or from
+``giulia.registry``) — never redefine them locally.
 
-AgentRegistryBrief is a trimmed read-only projection used by ADK tools.
+Overview
+--------
+
+=========================================================  =============================================
+Model                                                      Purpose
+=========================================================  =============================================
+:class:`AgentTier`                                         Enum: ``private`` or ``public``
+:class:`AgentAddr`                                         Full registry record for a registered agent
+:class:`AgentAddrCreate`                                   Registration payload (sent by agents at startup)
+:class:`AgentAddrUpdate`                                   Partial-update payload (PATCH semantics)
+:class:`AgentRegistryBrief`                                Trimmed projection returned to ADK tool callers
+=========================================================  =============================================
 """
 
 from __future__ import annotations
@@ -22,12 +33,58 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class AgentTier(StrEnum):
+    """Visibility tier of an agent in the registry."""
+
     PRIVATE = "private"
+    """Only visible within the same organisation / namespace."""
+
     PUBLIC = "public"
+    """Discoverable by any authenticated caller."""
 
 
 class AgentAddr(BaseModel):
-    """Full registry record for a registered agent."""
+    """Full registry record for a registered agent.
+
+    This is the primary model persisted by every :class:`AgentStore`
+    backend.  It carries identity, network endpoints, capabilities, and
+    lifecycle timestamps.
+
+    Fields
+    ------
+    agent_id : str
+        URN identifier (e.g. ``urn:agent:acme:private:billing``).
+        Serves as the primary key in every store.
+    agent_name : str
+        Human-readable short name (e.g. ``"billing"``).
+    description : str | None
+        One-liner describing what the agent does.
+    company : str | None
+        Organisation that owns the agent.
+    primary_facts_url : str
+        Public ``/.well-known/agent-facts`` endpoint.
+    private_facts_url : str | None
+        Internal (in-cluster) ``/.well-known/agent-facts`` endpoint.
+    adaptive_resolver_url : str | None
+        Optional adaptive-resolver endpoint for dynamic routing.
+    ttl : int
+        Time-to-live in seconds.  If no heartbeat arrives within this
+        window the agent is considered stale.  Default: 900 (15 min).
+    signature : str
+        Ed25519 signature over the record fields (integrity proof).
+    registered_at : datetime
+        Timestamp of first registration (set once, never overwritten).
+    last_update : datetime
+        Timestamp of the most recent upsert.
+    capabilities : list[str]
+        Capability URNs the agent advertises
+        (e.g. ``["urn:cap:billing", "urn:cap:invoicing"]``).
+    protocol : str
+        Wire protocol.  Default ``"a2a"`` (Agent-to-Agent).
+    tier : AgentTier
+        Visibility tier.  Default :attr:`AgentTier.PRIVATE`.
+    region : str | None
+        Deployment region (e.g. ``"europe-west1"``).
+    """
 
     agent_id: str = Field(
         ..., description="URN identifier, e.g. urn:agent:acme:private:inventory"
@@ -55,7 +112,12 @@ class AgentAddr(BaseModel):
 
 
 class AgentAddrCreate(BaseModel):
-    """Payload for registering a new agent."""
+    """Registration payload sent by agents at startup.
+
+    Contains all the fields an agent supplies when calling
+    ``POST /registry/api/v1/agents``.  The server fills in
+    ``registered_at`` and ``last_update`` automatically.
+    """
 
     agent_id: str = Field(
         ..., description="URN identifier, e.g. urn:agent:acme:private:inventory"
@@ -75,7 +137,11 @@ class AgentAddrCreate(BaseModel):
 
 
 class AgentAddrUpdate(BaseModel):
-    """Partial-update payload for an existing agent record."""
+    """Partial-update payload (PATCH semantics).
+
+    Only non-``None`` fields are applied to the existing record.
+    Typically used with ``PUT /registry/api/v1/agents/{agent_id}``.
+    """
 
     primary_facts_url: str | None = None
     ttl: int | None = None
@@ -90,7 +156,11 @@ class AgentAddrUpdate(BaseModel):
 
 
 class AgentRegistryBrief(BaseModel):
-    """Subset of a registry ``AgentAddr`` row returned to the model."""
+    """Lightweight projection of an :class:`AgentAddr` for ADK tool responses.
+
+    Strips timestamps, TTL, and signatures — keeps only the fields that
+    are useful for the LLM to decide which agent to invoke.
+    """
 
     model_config = ConfigDict(extra="ignore")
 
@@ -107,7 +177,7 @@ class AgentRegistryBrief(BaseModel):
 
     @classmethod
     def from_agent_addr(cls, agent: AgentAddr) -> Self:
-        """Build a brief from a fully-typed ``AgentAddr``."""
+        """Build a brief from a fully-typed :class:`AgentAddr`."""
         return cls(
             agent_id=agent.agent_id,
             agent_name=agent.agent_name,
@@ -123,7 +193,11 @@ class AgentRegistryBrief(BaseModel):
 
     @classmethod
     def from_registry_row(cls, raw: Mapping[str, Any] | AgentAddr) -> Self:
-        """Build a brief from a raw registry dict or a typed ``AgentAddr``."""
+        """Build a brief from a raw registry dict or a typed :class:`AgentAddr`.
+
+        Useful when working with raw HTTP responses from the registry API
+        (which return plain dicts) as well as typed model instances.
+        """
         if isinstance(raw, AgentAddr):
             return cls.from_agent_addr(raw)
         caps = raw.get("capabilities")

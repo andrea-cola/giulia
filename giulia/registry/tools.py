@@ -13,8 +13,7 @@ from google.adk.tools.tool_context import ToolContext
 from giulia.agents.a2a.a2a_agent_factory import remote_a2a_agent_from_registry
 from giulia.agents.registry_client.discovery import discover_agents, resolve_agent
 from giulia.logging import logger
-
-from .models import AgentRegistryBrief
+from giulia.registry.models import AgentRegistryBrief
 
 
 def _blank_to_none(value: str) -> str | None:
