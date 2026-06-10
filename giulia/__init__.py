@@ -55,6 +55,28 @@ def __getattr__(name: str) -> Any:
 
         return register_private_agent
 
+    # Registry models & protocol
+    if name == "AgentTier":
+        from .agents.registry.models import AgentTier
+
+        return AgentTier
+    if name == "AgentAddr":
+        from .agents.registry.models import AgentAddr
+
+        return AgentAddr
+    if name == "AgentAddrCreate":
+        from .agents.registry.models import AgentAddrCreate
+
+        return AgentAddrCreate
+    if name == "AgentAddrUpdate":
+        from .agents.registry.models import AgentAddrUpdate
+
+        return AgentAddrUpdate
+    if name == "AgentStore":
+        from .agents.registry.agent_store import AgentStore
+
+        return AgentStore
+
     # Utils
     if name == "urn_to_slug":
         from .utils.urn import urn_to_slug
@@ -82,9 +104,17 @@ __all__ = [
     "config",
     "Config",
     "AgentYAMLConfig",
+    # Registry discovery
     "discover_agents",
     "resolve_agent",
     "register_private_agent",
+    # Registry models & protocol
+    "AgentTier",
+    "AgentAddr",
+    "AgentAddrCreate",
+    "AgentAddrUpdate",
+    "AgentStore",
+    # Utils / auth
     "urn_to_slug",
     "verify_jwt",
     "JWTValidationError",

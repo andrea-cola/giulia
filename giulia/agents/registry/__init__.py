@@ -1,10 +1,22 @@
-"""Agent registry — discovery, resolution, and ADK tools.
+"""Agent registry — models, storage protocol, discovery, and ADK tools.
 
 Public surface:
-  - ``discover_agents`` / ``resolve_agent`` / ``resolve_agent_base_url`` — lookup
-  - ``search_agents_in_registry`` / ``get_registered_agent`` — ADK tools (registry search)
-  - ``make_invoke_registered_agent_tool`` / ``make_dispatch_agent_tool`` — ADK tool factories (sync A2A)
-  - ``AgentRegistryBrief`` — trimmed registry row model
+  Models:
+    - ``AgentTier`` — tier enum (private / public)
+    - ``AgentAddr`` — canonical registry record
+    - ``AgentAddrCreate`` — registration payload
+    - ``AgentAddrUpdate`` — partial-update payload
+    - ``AgentRegistryBrief`` — trimmed projection for ADK tools
+
+  Storage:
+    - ``AgentStore`` — backend-agnostic storage protocol
+
+  Discovery:
+    - ``discover_agents`` / ``resolve_agent`` / ``resolve_agent_base_url``
+
+  ADK tools:
+    - ``search_agents_in_registry`` / ``get_registered_agent``
+    - ``make_invoke_registered_agent_tool`` / ``make_dispatch_agent_tool``
 """
 
 from giulia.agents.a2a.a2a_agent_factory import resolve_agent_base_url  # noqa: F401
@@ -19,15 +31,31 @@ from giulia.agents.registry_client.discovery import (  # noqa: F401
     resolve_agent,
 )
 
-from .models import AgentRegistryBrief  # noqa: F401
+from .agent_store import AgentStore  # noqa: F401
+from .models import (  # noqa: F401
+    AgentAddr,
+    AgentAddrCreate,
+    AgentAddrUpdate,
+    AgentRegistryBrief,
+    AgentTier,
+)
 
 __all__ = [
+    # Models
+    "AgentTier",
+    "AgentAddr",
+    "AgentAddrCreate",
+    "AgentAddrUpdate",
     "AgentRegistryBrief",
+    # Storage protocol
+    "AgentStore",
+    # Discovery
     "discover_agents",
+    "resolve_agent",
+    "resolve_agent_base_url",
+    # ADK tools
     "get_registered_agent",
     "make_dispatch_agent_tool",
     "make_invoke_registered_agent_tool",
-    "resolve_agent",
-    "resolve_agent_base_url",
     "search_agents_in_registry",
 ]
