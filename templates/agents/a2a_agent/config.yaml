@@ -1,0 +1,23 @@
+agent:
+  name: my-a2a-agent
+  description: "An A2A-capable Giulia agent."
+  company: acme
+  domain: agents.acme.com
+  tier: public
+  ttl: 3600
+  capabilities:
+    - urn:capability:acme:delegation
+    - urn:capability:acme:general-assistant
+
+  auth:
+    method: oidc
+    jwks: https://agents.acme.com/agents/my-a2a-agent/.well-known/jwks.json
+
+  a2a:
+    version: "1.0.0"
+    protocolVersion: "1.0"
+    streaming: true
+    pushNotifications: true
+    provider:
+      organization: Acme Corp
+      url: https://acme.com

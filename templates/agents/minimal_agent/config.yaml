@@ -1,0 +1,19 @@
+agent:
+  name: my-agent
+  description: "A minimal Giulia agent."
+  company: acme
+  domain: agents.acme.com
+  tier: private
+  ttl: 3600
+  capabilities:
+    - urn:capability:acme:general-assistant
+
+  auth:
+    method: oidc
+    jwks: https://agents.acme.com/agents/my-agent/.well-known/jwks.json
+
+  a2a:
+    version: "1.0.0"
+    protocolVersion: "1.0"
+    streaming: false
+    pushNotifications: false

@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 #
-# Bumps the patch version in pyproject.toml when giulia/ package files are staged.
-# Called by pre-commit; exits 0 (no-op) if no giulia/ files are staged.
+# Bumps the patch version in packages/giulia/pyproject.toml when package
+# source files are staged. Called by pre-commit; exits 0 (no-op) if no
+# relevant files are staged.
 #
 set -euo pipefail
 
-TOML="pyproject.toml"
+TOML="packages/giulia/pyproject.toml"
 
-STAGED_FILES=$(git diff --cached --name-only -- 'giulia/' | grep -v '^pyproject\.toml$' || true)
+STAGED_FILES=$(git diff --cached --name-only -- 'packages/giulia/giulia/' | grep -v '^packages/giulia/pyproject\.toml$' || true)
 
 if [ -z "$STAGED_FILES" ]; then
     exit 0
