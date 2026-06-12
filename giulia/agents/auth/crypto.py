@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 import json
 from datetime import UTC, datetime
 from typing import Any
@@ -195,3 +196,57 @@ def check_vc_status_list(status_list_url: str, index: int) -> bool:
     """
     # TODO: implement actual HTTP fetch + bitstring check
     return True
+
+
+# ---------------------------------------------------------------------------
+# RSA JWKS helpers
+# ---------------------------------------------------------------------------
+
+
+def _b64url_bytes(data: bytes) -> str:
+    """Base64url-encode raw bytes (no padding)."""
+    return base64.urlsafe_b64encode(data).rstrip(b"=").decode()
+
+
+def rsa_public_key_to_jwk(pem: str, kid: str = "kms-key-1") -> dict[str, str]:
+    """Convert an RSA PEM public key to JWK (RFC 7517) format.
+
+    Args:
+        pem: PEM-encoded RSA public key string.
+        kid: Key ID for the ``kid`` field.
+
+    Returns:
+        JWK dict with ``kty``, ``alg``, ``use``, ``kid``, ``n``, ``e``.
+    """
+    from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
+    from cryptography.hazmat.primitives.serialization import load_pem_public_key
+
+    key = load_pem_public_key(pem.encode())
+    if not isinstance(key, RSAPublicKey):
+        raise ValueError("Key is not RSA — expected an RSA public key PEM")
+
+    numbers = key.public_numbers()
+    key_size = key.key_size // 8
+
+    return {
+        "kty": "RSA",
+        "alg": "RS256",
+        "use": "sig",
+        "kid": kid,
+        "n": _b64url_bytes(numbers.n.to_bytes(key_size, byteorder="big")),
+        "e": _b64url_bytes(numbers.e.to_bytes(3, byteorder="big")),
+    }
+
+
+def rsa_pem_to_jwks(pem: str, kid: str = "kms-key-1") -> dict:
+    """Build a JWKS document from an RSA PEM public key.
+
+    Returns a dict in the shape ``{"keys": [<jwk>]}`` suitable for
+    serving at ``/.well-known/jwks.json``.
+    """
+    return {"keys": [rsa_public_key_to_jwk(pem, kid=kid)]}
+
+
+def hash_secret(secret: str) -> str:
+    """SHA-256 hash a plaintext secret for storage comparison."""
+    return hashlib.sha256(secret.encode()).hexdigest()

@@ -2,8 +2,8 @@
 
 Providers
 ---------
-- ``GcpKmsProvider``    — Google Cloud KMS (default)
-- ``FileKmsProvider``   — reads a PEM public key from disk
+- ``GcpKmsProvider``    — Google Cloud KMS (default, supports signing + public key)
+- ``FileKmsProvider``   — reads a PEM public key from disk (verification only)
 - ``StaticKmsProvider`` — takes a PEM string directly (useful for tests)
 """
 
@@ -32,8 +32,31 @@ class KmsProvider(Protocol):
         ...
 
 
+@runtime_checkable
+class KmsSigningProvider(Protocol):
+    """Extended protocol that also supports asymmetric signing.
+
+    Providers implementing this can be used for both JWT verification
+    (via ``get_public_key_pem``) and JWT creation (via ``sign``).
+    """
+
+    def get_public_key_pem(self, key_ref: str) -> str:
+        """Return the RSA/EC public key as a PEM-encoded string."""
+        ...
+
+    def sign(self, key_ref: str, data: bytes) -> bytes:
+        """Sign *data* with the private key identified by *key_ref*.
+
+        Returns the raw signature bytes.
+
+        Raises:
+            RuntimeError: if signing fails.
+        """
+        ...
+
+
 class GcpKmsProvider:
-    """Fetch public keys from Google Cloud KMS.
+    """Fetch public keys and sign data via Google Cloud KMS.
 
     This is the default provider; requires ``google-cloud-kms``.
 
@@ -41,24 +64,44 @@ class GcpKmsProvider:
 
         projects/my-project/locations/global/keyRings/my-ring/
         cryptoKeys/my-key/cryptoKeyVersions/1
+
+    Implements both :class:`KmsProvider` and :class:`KmsSigningProvider`.
     """
 
-    def get_public_key_pem(self, key_ref: str) -> str:
-        try:
-            from google.cloud import kms  # type: ignore[import-untyped]
-        except ImportError as exc:
-            raise ImportError(
-                "google-cloud-kms is required for GcpKmsProvider. "
-                "Install it with: pip install google-cloud-kms"
-            ) from exc
+    def __init__(self) -> None:
+        self._client = None
 
-        client = kms.KeyManagementServiceClient()
+    def _get_client(self):
+        if self._client is None:
+            try:
+                from google.cloud import kms  # type: ignore[import-untyped]
+            except ImportError as exc:
+                raise ImportError(
+                    "google-cloud-kms is required for GcpKmsProvider. "
+                    "Install it with: pip install google-cloud-kms"
+                ) from exc
+            self._client = kms.KeyManagementServiceClient()
+        return self._client
+
+    def get_public_key_pem(self, key_ref: str) -> str:
+        client = self._get_client()
         try:
             response = client.get_public_key(request={"name": key_ref})
             return response.pem
         except Exception as exc:
             raise RuntimeError(
                 f"Failed to fetch public key {key_ref!r} from GCP KMS: {exc}"
+            ) from exc
+
+    def sign(self, key_ref: str, data: bytes) -> bytes:
+        """Sign *data* using the GCP KMS asymmetric key at *key_ref*."""
+        client = self._get_client()
+        try:
+            response = client.asymmetric_sign(request={"name": key_ref, "data": data})
+            return response.signature
+        except Exception as exc:
+            raise RuntimeError(
+                f"Failed to sign with KMS key {key_ref!r}: {exc}"
             ) from exc
 
 
