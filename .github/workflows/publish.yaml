@@ -81,7 +81,7 @@ jobs:
           name: dist
           path: dist/
 
-      # a "GitHub Actions" publisher at pypi.org/manage/project/giulia/.
+      # "GitHub Actions" publisher at pypi.org/manage/project/giulia/.
       #
-      # - name: Publish to PyPI (OIDC)
-      #   uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Publish to PyPI (OIDC)
+        uses: pypa/gh-action-pypi-publish@release/v1
