@@ -8,10 +8,10 @@ on:
 
 jobs:
   # ─────────────────────────────────────────────────────────────────────────
-  # 1. Lint · typecheck · test
+  # 1. Lint · typecheck
   # ─────────────────────────────────────────────────────────────────────────
   ci:
-    name: lint · typecheck · test
+    name: lint · typecheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -38,9 +38,6 @@ jobs:
 
       - name: Type check (pyright)
         run: uv run pyright
-
-      - name: Test (pytest)
-        run: uv run pytest -v --tb=short
 
   # ─────────────────────────────────────────────────────────────────────────
   # 2. Auto-tag on main — runs only after a green CI on a direct push

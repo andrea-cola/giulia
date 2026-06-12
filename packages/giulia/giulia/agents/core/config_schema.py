@@ -6,20 +6,20 @@ and A2A agent-card generation.
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field
 
 
-class AgentTier(str, Enum):
+class AgentTier(StrEnum):
     PRIVATE = "private"
     PUBLIC = "public"
 
 
 class ProviderConfig(BaseModel):
-    organization: str
-    url: str
+    organization: str = ""
+    url: str = ""
 
 
 class OAuthFlow(BaseModel):

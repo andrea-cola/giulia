@@ -54,7 +54,7 @@ async def _create_handler(request: Request) -> JSONResponse:
             invocation_id=payload.get("invocation_id"),
             session_id=payload.get("session_id"),
             user_id=payload.get("user_id"),
-            target_agent_id=payload.get("target_agent_id") or _local_agent_id,
+            target_agent_id=payload.get("target_agent_id") or _local_agent_id or "",
             assignee=payload.get("assignee"),
             prompt_summary=payload.get("prompt_summary"),
             app_name=payload.get("app_name"),
@@ -71,7 +71,7 @@ async def _create_handler(request: Request) -> JSONResponse:
 
 
 async def _resolve_handler(request: Request) -> JSONResponse:
-    approval_id = request.path_params.get("approval_id")
+    approval_id = request.path_params.get("approval_id") or ""
     try:
         payload = await request.json()
     except json.JSONDecodeError:

@@ -26,11 +26,19 @@ repos:
 
   - repo: local
     hooks:
+      - id: pyright
+        name: Type check (pyright)
+        entry: uv run --frozen pyright
+        language: system
+        types: [python]
+        pass_filenames: false
+        stages: [pre-commit]
+
       - id: bump-version
         name: Bump giulia version
         entry: scripts/bump-version.sh
         language: script
-        files: ^giulia/
-        exclude: ^pyproject\.toml$
+        files: ^packages/giulia/giulia/
+        exclude: ^packages/giulia/pyproject\.toml$
         pass_filenames: false
         stages: [pre-commit]

@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field
 
 
-class ChatEventType(str, Enum):
+class ChatEventType(StrEnum):
     """Google Chat event types sent to webhooks."""
 
     MESSAGE = "MESSAGE"
@@ -17,14 +17,14 @@ class ChatEventType(str, Enum):
     CARD_CLICKED = "CARD_CLICKED"
 
 
-class ChatUserType(str, Enum):
+class ChatUserType(StrEnum):
     """Type of user in Google Chat."""
 
     HUMAN = "HUMAN"
     BOT = "BOT"
 
 
-class ChatSpaceType(str, Enum):
+class ChatSpaceType(StrEnum):
     """Type of Chat space."""
 
     ROOM = "ROOM"

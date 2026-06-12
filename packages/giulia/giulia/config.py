@@ -57,4 +57,22 @@ def _load_dotenv() -> None:
 
 _load_dotenv()
 
-db_config: DatabaseConfig = DatabaseConfig()  # type: ignore[call-arg]
+_db_config_instance: DatabaseConfig | None = None
+
+
+def _get_db_config() -> DatabaseConfig:
+    """Return the singleton DatabaseConfig, instantiating it on first call."""
+    global _db_config_instance
+    if _db_config_instance is None:
+        _db_config_instance = DatabaseConfig()  # type: ignore[call-arg]
+    return _db_config_instance
+
+
+class _DbConfigProxy:
+    """Lazy proxy so callers can still write ``from giulia.config import db_config``."""
+
+    def __getattr__(self, name: str) -> object:
+        return getattr(_get_db_config(), name)
+
+
+db_config: DatabaseConfig = _DbConfigProxy()  # type: ignore[assignment]

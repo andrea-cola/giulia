@@ -117,7 +117,7 @@ def to_a2a_giulia(
         await setup_a2a(app)
         try:
             if lifespan:
-                async with lifespan(app):
+                async with lifespan(app):  # type: ignore[attr-defined]
                     yield
             else:
                 yield

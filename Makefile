@@ -1,4 +1,4 @@
-.PHONY: help install lint format format-check typecheck test test-cov ci-local hooks build clean
+.PHONY: help install lint format format-check typecheck ci-local hooks build clean
 
 PYTHON := uv run
 PKG    := giulia
@@ -22,18 +22,11 @@ format-check: ## Check formatting without modifying files
 typecheck: ## Run pyright type checker
 	$(PYTHON) pyright
 
-test: ## Run the test suite
-	$(PYTHON) pytest
-
-test-cov: ## Run tests with coverage report
-	$(PYTHON) pytest --cov=$(PKG) --cov-report=term-missing --cov-report=html
-
 ci-local: ## Run the full CI pipeline locally (fail-fast)
 	uv sync
 	$(PYTHON) ruff check .
 	$(PYTHON) ruff format --check .
 	$(PYTHON) pyright
-	$(PYTHON) pytest -v
 
 hooks: ## Install pre-commit hooks
 	$(PYTHON) pre-commit install

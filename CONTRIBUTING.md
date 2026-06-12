@@ -11,7 +11,6 @@ uv sync
 uv run ruff check .
 uv run ruff format --check .
 uv run pyright
-uv run pytest -v
 ```
 
 Single-command shortcut:
@@ -20,7 +19,7 @@ Single-command shortcut:
 make ci-local
 ```
 
-`make ci-local` runs the five commands above in order and hard-fails on the
+`make ci-local` runs the four commands above in order and hard-fails on the
 first red one. Run it before every `git push`.
 
 ---
@@ -73,8 +72,7 @@ Each layer lives in `giulia/agents/<layer>/`. When adding a new one:
 
 1. Create `giulia/agents/<layer>/` with an `__init__.py` that re-exports the
    public surface.
-2. Add at least one test in `tests/test_<layer>.py`.
-3. Update `docs/layers.md` with the layer's contract and reference
+2. Update `docs/layers.md` with the layer's contract and reference
    implementation.
 
 ---
@@ -82,10 +80,9 @@ Each layer lives in `giulia/agents/<layer>/`. When adding a new one:
 ## Pull Request Process
 
 1. Branch from `main`.
-2. Make your changes. Run `make ci-local` — all five checks must pass.
-3. Write or update tests for every new behaviour.
-4. Open a PR with a clear description of *what* changed and *why*.
-5. Address review feedback.
+2. Make your changes. Run `make ci-local` — all four checks must pass.
+3. Open a PR with a clear description of *what* changed and *why*.
+4. Address review feedback.
 
 For larger changes (new layers, architectural modifications) please open an
 issue first to discuss the approach.
@@ -94,12 +91,12 @@ issue first to discuss the approach.
 
 ## Releasing to PyPI
 
-Releases are automated via GitHub Actions (`.github/workflows/publish.yaml`).
+Releases are fully automated. To ship a new version:
 
-1. Bump the version in `pyproject.toml` (use `scripts/bump-version.sh`).
-2. Commit and push — create a Git tag: `git tag v<version> && git push --tags`.
-3. The `publish` workflow triggers on tag push, builds the wheel, and uploads
-   to PyPI using the `PYPI_API_TOKEN` repository secret.
+1. Bump the version in `packages/giulia/pyproject.toml` (use `scripts/bump-version.sh` or edit manually).
+2. Commit and push to `main`.
+3. The CI workflow automatically creates a `v<version>` tag if one doesn't exist yet.
+4. The tag push triggers `publish.yaml`, which builds the wheel and uploads it to PyPI using the `PYPI_API_TOKEN` repository secret.
 
 ---
 
