@@ -70,6 +70,7 @@ exclude = ["\\.venv/"]
 
 [dependency-groups]
 dev = [
+    "ruff>=0.9.0",
     "pre-commit>=4.0.0",
     "types-pyyaml>=6.0.12.20260408",
     "pyright>=1.1.0",
