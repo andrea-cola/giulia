@@ -91,12 +91,15 @@ issue first to discuss the approach.
 
 ## Releasing to PyPI
 
-Releases are fully automated. To ship a new version:
+Releases are fully automated via `ci.yaml`. To ship a new version:
 
-1. Bump the version in `packages/giulia/pyproject.toml` (use `scripts/bump-version.sh` or edit manually).
+1. Bump the version in `packages/giulia/pyproject.toml` (the pre-commit `bump-version` hook does this automatically on every staged commit to `packages/giulia/giulia/`).
 2. Commit and push to `main`.
-3. The CI workflow automatically creates a `v<version>` tag if one doesn't exist yet.
-4. The tag push triggers `publish.yaml`, which builds the wheel and uploads it to PyPI using the `PYPI_API_TOKEN` repository secret.
+3. The `release` job in `ci.yaml` runs after a green lint + typecheck, creates the `v<version>` tag, builds the wheel, and publishes to PyPI via OIDC trusted publishing — no token required.
+
+> **Note:** OIDC trusted publishing must be configured once on PyPI at
+> `pypi.org/manage/project/giulia/settings/publishing/` — add a GitHub Actions
+> publisher pointing to this repository and the `ci.yaml` workflow.
 
 ---
 
