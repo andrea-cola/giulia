@@ -40,23 +40,29 @@ jobs:
         run: uv run pyright
 
   # ─────────────────────────────────────────────────────────────────────────
-  # 2. Auto-tag on main — runs only after a green CI on a direct push
-  #    (not on PRs). Creates v<version> from packages/giulia/pyproject.toml.
-  #    Skips silently if the tag already exists (idempotent).
+  # 2. Auto-tag + publish — only on direct push to main after green CI.
+  #
+  # GitHub Actions does NOT trigger workflows from tags pushed by GITHUB_TOKEN,
+  # so the build and publish steps live here in the same workflow instead of a
+  # separate publish.yaml that would never fire.
+  #
+  # Skips silently if the tag already exists (idempotent).
   # ─────────────────────────────────────────────────────────────────────────
-  tag:
-    name: Create release tag
+  release:
+    name: Tag · build · publish
     needs: ci
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
-      contents: write   # required to push tags
+      contents: write   # push git tag
+      id-token: write   # OIDC trusted publishing to PyPI
 
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # full history so we can check existing tags
+          fetch-depth: 0
 
+      # ── Read version ───────────────────────────────────────────────────
       - name: Read version from pyproject.toml
         id: version
         run: |
@@ -64,6 +70,7 @@ jobs:
           echo "value=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
 
+      # ── Check / create tag ─────────────────────────────────────────────
       - name: Check if tag already exists
         id: tag_check
         run: |
@@ -75,8 +82,6 @@ jobs:
 
       - name: Create and push tag
         if: steps.tag_check.outputs.exists == 'false'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -84,6 +89,32 @@ jobs:
           git push origin "${{ steps.version.outputs.tag }}"
           echo "Tagged ${{ steps.version.outputs.tag }}"
 
-      - name: Tag already exists — skipping
+      - name: Tag already exists — skipping publish
         if: steps.tag_check.outputs.exists == 'true'
         run: echo "Tag ${{ steps.version.outputs.tag }} already exists, nothing to do."
+
+      # ── Build ──────────────────────────────────────────────────────────
+      - name: Install uv
+        if: steps.tag_check.outputs.exists == 'false'
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+          cache-dependency-glob: "**/pyproject.toml"
+
+      - name: Set up Python
+        if: steps.tag_check.outputs.exists == 'false'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build wheel and sdist
+        if: steps.tag_check.outputs.exists == 'false'
+        working-directory: packages/giulia
+        run: uv build --out-dir ../../dist
+
+      # ── Publish ────────────────────────────────────────────────────────
+      - name: Publish to PyPI (OIDC)
+        if: steps.tag_check.outputs.exists == 'false'
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
