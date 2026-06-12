@@ -1,0 +1,10 @@
+[project]
+name = "giulia-sdk"
+version = "0.1.0"
+description = "Layer interfaces and shared types for the giulia agent framework (planned)"
+requires-python = ">=3.12"
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

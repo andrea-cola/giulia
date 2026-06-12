@@ -1,0 +1,10 @@
+[project]
+name = "giulia-cli"
+version = "0.1.0"
+description = "Command-line interface for the giulia agent framework (planned)"
+requires-python = ">=3.12"
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
