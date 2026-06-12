@@ -269,7 +269,7 @@ async def run_inbound_job_with_runner(
     # We read (and clean up) the entry after the turn, regardless of outcome.
     _hitl_pending_by_inv[session_id] = False
 
-    token = current_process_id.set(job.process_id)
+    token = current_process_id.set(job.process_id or "")
     token_sid = current_session_id.set(session_id)
     try:
         # 1. Preparation

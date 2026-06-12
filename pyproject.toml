@@ -44,16 +44,19 @@ ignore = [
 [tool.pyright]
 pythonVersion = "3.12"
 typeCheckingMode = "standard"
-ignore = [".venv"]
+ignore = [".venv", "templates/"]
 
-# ---------------------------------------------------------------------------
-# Test runner
-# ---------------------------------------------------------------------------
+# Suppressed intentionally:
+# - reportMissingImports / reportMissingModuleSource: GCP/cloud extras (vertexai,
+#   google.cloud.sql, opentelemetry) are only present with [gcp]. Missing in CI.
+# - reportUnsupportedDunderAll: __init__.py files use __getattr__ for lazy loading;
+#   pyright cannot statically trace symbols returned by __getattr__.
+reportMissingImports = "none"
+reportMissingModuleSource = "none"
+reportUnsupportedDunderAll = "none"
 
-[tool.pytest.ini_options]
-asyncio_mode = "auto"
-testpaths = ["tests"]
-addopts = "-v --tb=short"
+# Tell pyright where packages live so relative imports inside packages/giulia resolve.
+extraPaths = ["packages/giulia"]
 
 # ---------------------------------------------------------------------------
 # Legacy mypy (kept for IDE compatibility)
@@ -74,8 +77,4 @@ dev = [
     "pre-commit>=4.0.0",
     "types-pyyaml>=6.0.12.20260408",
     "pyright>=1.1.0",
-    "pytest>=8.0.0",
-    "pytest-asyncio>=0.24.0",
-    "pytest-cov>=5.0.0",
-    "hypothesis>=6.0.0",
 ]

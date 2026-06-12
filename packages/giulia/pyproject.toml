@@ -1,6 +1,6 @@
 [project]
 name = "giulia"
-version = "0.1.12"
+version = "0.1.21"
 description = "White-label agent framework: registry discovery, registration, A2A, and cryptographic identity"
 requires-python = ">=3.12"
 dependencies = [

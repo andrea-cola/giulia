@@ -40,7 +40,7 @@ class WorkflowApprovalCreate(BaseModel):
     prompt_summary: str | None = None
     approval_id: str | None = None
     next_step: str | None = None
-    form_schema: dict = {}
+    form_schema: dict | None = None
 
     @field_validator("form_schema", mode="before")
     @classmethod

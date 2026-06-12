@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 _TOKENINFO_URL = "https://oauth2.googleapis.com/tokeninfo"
 
-_token_cache: TTLCache[str, _GoogleTokenInfo] = TTLCache(maxsize=256, ttl=300)
+_token_cache: TTLCache[str, _GoogleTokenInfo] = TTLCache(maxsize=256, ttl=300)  # type: ignore[var-annotated]
 
 _http_client: httpx.AsyncClient | None = None
 

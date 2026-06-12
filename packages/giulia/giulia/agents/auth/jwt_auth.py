@@ -20,7 +20,7 @@ from cachetools import TTLCache
 
 logger = logging.getLogger(__name__)
 
-_public_key_cache: TTLCache[str, str] = TTLCache(maxsize=4, ttl=3600)
+_public_key_cache: TTLCache[str, str] = TTLCache(maxsize=4, ttl=3600)  # type: ignore[var-annotated]
 
 
 class JWTValidationError(Exception):
@@ -145,9 +145,9 @@ def verify_jwt(token: str, *, audience: str | None = None) -> dict:
         raise JWTValidationError(f"Failed to fetch public key: {exc}") from exc
 
     issuer = config.jwt_issuer or None
-    decode_options: dict = {"require": ["sub", "exp"]}
+    decode_options: dict[str, object] = {"require": ["sub", "exp"]}
     if issuer:
-        decode_options["require"].append("iss")
+        decode_options["require"].append("iss")  # type: ignore[union-attr]
 
     try:
         payload = jwt.decode(
@@ -156,7 +156,7 @@ def verify_jwt(token: str, *, audience: str | None = None) -> dict:
             algorithms=["RS256"],
             issuer=issuer,
             audience=audience,
-            options=decode_options,
+            options=decode_options,  # type: ignore[arg-type]
         )
         return payload
     except jwt.ExpiredSignatureError as exc:

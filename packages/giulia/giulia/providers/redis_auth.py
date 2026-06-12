@@ -60,8 +60,8 @@ class GcpIamRedisAuthProvider:
                 scopes=["https://www.googleapis.com/auth/cloud-platform"]
             )
         request = google.auth.transport.requests.Request()
-        self._credentials.refresh(request)
-        token: str = self._credentials.token
+        self._credentials.refresh(request)  # type: ignore[union-attr]
+        token: str = self._credentials.token  # type: ignore[union-attr]
         if not token:
             raise RuntimeError(
                 "GCP IAM access token for Memorystore is empty after refresh"

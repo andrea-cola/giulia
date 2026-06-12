@@ -136,3 +136,12 @@ class AgentStore(Protocol):
         otherwise.
         """
         ...
+
+    async def close(self) -> None:
+        """Release backend resources (close pools, drain connections).
+
+        Implementations should override this if they manage a connection
+        pool or other resources that need explicit teardown.  The default
+        is a no-op so backends that don't need cleanup remain compatible.
+        """
+        ...

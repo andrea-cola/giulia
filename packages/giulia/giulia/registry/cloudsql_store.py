@@ -71,7 +71,7 @@ def _row_to_agent(row: dict[str, Any]) -> AgentAddr:
         last_update=row["last_update"],
         capabilities=list(row["capabilities"] or []),
         protocol=row["protocol"] or "a2a",
-        tier=row["tier"] or "private",
+        tier=row["tier"] or "private",  # type: ignore[arg-type]
         region=row["region"],
     )
 

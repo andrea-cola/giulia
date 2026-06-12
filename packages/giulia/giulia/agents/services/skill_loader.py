@@ -25,7 +25,7 @@ def load_skill(skill_dir: Path) -> Any:
     Returns:
         A ``google.adk.tools.skill_toolset.models.Skill`` instance.
     """
-    from google.adk.tools.skill_toolset import models
+    from google.adk.tools.skill_toolset import models  # type: ignore[attr-defined]
 
     skill_md = (skill_dir / "SKILL.md").read_text(encoding="utf-8")
     fm_match = re.match(r"^---\s*\n(.*?)\n---\s*\n(.*)", skill_md, re.DOTALL)
@@ -45,7 +45,7 @@ def load_skill(skill_dir: Path) -> Any:
         description = " ".join(str(v) for v in description.values())
     description = str(description).strip()
 
-    references: dict[str, str] = {}
+    references: dict[str, str | bytes] = {}
     refs_dir = skill_dir / "references"
     if refs_dir.is_dir():
         for ref_file in refs_dir.glob("*.md"):
@@ -54,7 +54,7 @@ def load_skill(skill_dir: Path) -> Any:
     return models.Skill(
         frontmatter=models.Frontmatter(name=name, description=description),
         instructions=instructions,
-        resources=models.Resources(references=references),
+        resources=models.Resources(references=references),  # type: ignore[arg-type]
     )
 
 

@@ -131,8 +131,8 @@ async def _heartbeat_loop(
     interval = int(ttl * interval_factor)
     loop = asyncio.get_running_loop()
 
-    agent_id = agent_config.get("urn")
-    agent_name = agent_config.get("name")
+    agent_id: str = agent_config.get("urn") or ""
+    agent_name: str = agent_config.get("name") or ""
     company = agent_config.get("company")
     service_url = agent_config.get("k8s_service_url", config.service_url)
     public_url = agent_config.get("public_url")
