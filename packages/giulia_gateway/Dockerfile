@@ -1,13 +1,16 @@
 # giulia_gateway — runs on Cloud Run.
 
-FROM python:3.12-slim
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 
 WORKDIR /app
 
-COPY pyproject.toml .
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_NO_CACHE=1
+
+COPY pyproject.toml README.md ./
 COPY giulia_gateway/ giulia_gateway/
 
-RUN pip install --no-cache-dir .
+RUN uv pip install --system .
 
 EXPOSE 8080
 
