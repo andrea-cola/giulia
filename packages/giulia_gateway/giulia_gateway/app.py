@@ -79,6 +79,10 @@ _MODEL_VARIANT_KWARGS: dict[str, dict] = {
         "thinking": {"type": "enabled", "budget_tokens": 16384},
         "reasoning_effort": "high",
     },
+    "-xhigh": {
+        "thinking": {"type": "enabled", "budget_tokens": 65536},
+        "reasoning_effort": "max",
+    },
     "-max": {
         "reasoning_effort": "max",
     },

@@ -57,7 +57,28 @@ model_list:
       vertex_location: "global"
       drop_params: true
 
+  - model_name: claude-4.5-opus-xhigh
+    litellm_params:
+      model: vertex_ai/claude-opus-4-5
+      vertex_project: "${VERTEX_PROJECT}"
+      vertex_location: "global"
+      drop_params: true
+
   # ── Claude 4.6 Opus: non-thinking, high effort (default) ──────────
+  - model_name: claude-4.6-opus-xhigh
+    litellm_params:
+      model: vertex_ai/claude-opus-4-6
+      vertex_project: "${VERTEX_PROJECT}"
+      vertex_location: "global"
+      drop_params: true
+
+  - model_name: claude-4.6-opus-xhigh
+    litellm_params:
+      model: vertex_ai/claude-opus-4-6
+      vertex_project: "${VERTEX_PROJECT}"
+      vertex_location: "europe-west1"
+      drop_params: true
+
   - model_name: claude-4.6-opus-high
     litellm_params:
       model: vertex_ai/claude-opus-4-6
@@ -126,6 +147,20 @@ model_list:
       drop_params: true
 
   # ── Claude 4.7 Opus: non-thinking, high effort (default) ──────────
+  - model_name: claude-4.7-opus-xhigh
+    litellm_params:
+      model: vertex_ai/claude-opus-4-7
+      vertex_project: "${VERTEX_PROJECT}"
+      vertex_location: "global"
+      drop_params: true
+
+  - model_name: claude-4.7-opus-xhigh
+    litellm_params:
+      model: vertex_ai/claude-opus-4-7
+      vertex_project: "${VERTEX_PROJECT}"
+      vertex_location: "europe-west1"
+      drop_params: true
+
   - model_name: claude-4.7-opus-high
     litellm_params:
       model: vertex_ai/claude-opus-4-7
@@ -179,6 +214,20 @@ model_list:
       drop_params: true
 
   # ── Claude 4.8 Opus: non-thinking, high effort (default) ──────────
+  - model_name: claude-4.8-opus-xhigh
+    litellm_params:
+      model: vertex_ai/claude-opus-4-8
+      vertex_project: "${VERTEX_PROJECT}"
+      vertex_location: "global"
+      drop_params: true
+
+  - model_name: claude-4.8-opus-xhigh
+    litellm_params:
+      model: vertex_ai/claude-opus-4-8
+      vertex_project: "${VERTEX_PROJECT}"
+      vertex_location: "europe-west1"
+      drop_params: true
+
   - model_name: claude-4.8-opus-high
     litellm_params:
       model: vertex_ai/claude-opus-4-8
@@ -232,6 +281,20 @@ model_list:
       drop_params: true
 
   # ── Claude Sonnet 5 ───────────────────────────────────────────────
+  - model_name: claude-sonnet-5-xhigh
+    litellm_params:
+      model: vertex_ai/claude-sonnet-5
+      vertex_project: "${VERTEX_PROJECT}"
+      vertex_location: "global"
+      drop_params: true
+
+  - model_name: claude-sonnet-5-xhigh
+    litellm_params:
+      model: vertex_ai/claude-sonnet-5
+      vertex_project: "${VERTEX_PROJECT}"
+      vertex_location: "europe-west1"
+      drop_params: true
+
   - model_name: claude-sonnet-5-medium
     litellm_params:
       model: vertex_ai/claude-sonnet-5
