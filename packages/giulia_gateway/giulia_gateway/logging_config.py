@@ -42,7 +42,10 @@ class CloudLoggingFormatter(logging.Formatter):
     ):
         super().__init__()
         self.service_name = service_name
-        self.project_id = project_id or os.environ.get("GOOGLE_CLOUD_PROJECT", "")
+        self.project_id = project_id or os.environ.get(
+            "GOOGLE_CLOUD_PROJECT",
+            os.environ.get("VERTEX_PROJECT", ""),
+        )
 
     def format(self, record: logging.LogRecord) -> str:
         log_entry: dict[str, Any] = {

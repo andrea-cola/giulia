@@ -12,20 +12,25 @@ startup. See `giulia_gateway/app.py` and `litellm-config.yaml` for details.
 
 | Variable | Description |
 |---|---|
-| `VERTEX_PROJECT` | GCP project ID for Vertex AI calls |
-| `DB_INSTANCE` | Cloud SQL instance connection name |
-| `DB_USER` | IAM database user |
-| `DB_NAME` | Database name (default: `brain`) |
-| `GOOGLE_CLOUD_PROJECT` | GCP project for Cloud Logging trace correlation |
+| `VERTEX_PROJECT` | GCP project ID (Vertex AI calls and Cloud Logging trace correlation) |
 
 ### Optional environment variables
 
 | Variable | Default | Description |
 |---|---|---|
-| `GATEWAY_API_KEY` | _(none)_ | Static API key accepted without a DB lookup |
+| `GATEWAY_API_KEY` | _(none)_ | Static API key accepted without a DB lookup; when set, all DB variables below are ignored |
 | `OPENAI_API_KEY` | _(none)_ | Enables OpenAI model passthrough |
-| `DB_IP_TYPE` | `private` | `private` or `public` for Cloud SQL |
+| `GOOGLE_CLOUD_PROJECT` | `VERTEX_PROJECT` | Override project ID for Cloud Logging |
 | `LITELLM_CONFIG` | `/app/litellm-config.yaml` | Path to model config |
+
+#### Cloud SQL variables (required when `GATEWAY_API_KEY` is not set)
+
+| Variable | Default | Description |
+|---|---|---|
+| `DB_INSTANCE` | _(none)_ | Cloud SQL instance connection name (`project:region:instance`) |
+| `DB_USER` | _(none)_ | IAM database user (e.g. `my-sa@my-project.iam`) |
+| `DB_NAME` | `brain` | Database name |
+| `DB_IP_TYPE` | `private` | `private` or `public` for Cloud SQL |
 
 ## Running locally
 
