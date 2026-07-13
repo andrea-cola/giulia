@@ -23,7 +23,6 @@ from __future__ import annotations
 
 import httpx
 
-from giulia.agents.core import config
 from giulia.agents.core.constants import A2A_PUSH_PATH
 from giulia.logging import logger
 
@@ -52,6 +51,8 @@ _client: httpx.AsyncClient | None = None
 async def _get_http_client() -> httpx.AsyncClient:
     global _client
     if _client is None:
+        from giulia.agents.core import config  # noqa: PLC0415
+
         _client = httpx.AsyncClient(
             base_url=config.registry_http_origin,
             timeout=5.0,
