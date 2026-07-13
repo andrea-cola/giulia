@@ -246,6 +246,62 @@ model_list:
       vertex_location: "europe-west1"
       drop_params: true
 
+  - model_name: claude-sonnet-5-high
+    litellm_params:
+      model: vertex_ai/claude-sonnet-5
+      vertex_project: "${VERTEX_PROJECT}"
+      vertex_location: "global"
+      drop_params: true
+
+  - model_name: claude-sonnet-5-high
+    litellm_params:
+      model: vertex_ai/claude-sonnet-5
+      vertex_project: "${VERTEX_PROJECT}"
+      vertex_location: "europe-west1"
+      drop_params: true
+
+  - model_name: claude-sonnet-5-max
+    litellm_params:
+      model: vertex_ai/claude-sonnet-5
+      vertex_project: "${VERTEX_PROJECT}"
+      vertex_location: "global"
+      drop_params: true
+
+  - model_name: claude-sonnet-5-max
+    litellm_params:
+      model: vertex_ai/claude-sonnet-5
+      vertex_project: "${VERTEX_PROJECT}"
+      vertex_location: "europe-west1"
+      drop_params: true
+
+  - model_name: claude-sonnet-5-thinking
+    litellm_params:
+      model: vertex_ai/claude-sonnet-5
+      vertex_project: "${VERTEX_PROJECT}"
+      vertex_location: "global"
+      drop_params: true
+
+  - model_name: claude-sonnet-5-thinking
+    litellm_params:
+      model: vertex_ai/claude-sonnet-5
+      vertex_project: "${VERTEX_PROJECT}"
+      vertex_location: "europe-west1"
+      drop_params: true
+
+  - model_name: claude-sonnet-5-thinking-max
+    litellm_params:
+      model: vertex_ai/claude-sonnet-5
+      vertex_project: "${VERTEX_PROJECT}"
+      vertex_location: "global"
+      drop_params: true
+
+  - model_name: claude-sonnet-5-thinking-max
+    litellm_params:
+      model: vertex_ai/claude-sonnet-5
+      vertex_project: "${VERTEX_PROJECT}"
+      vertex_location: "europe-west1"
+      drop_params: true
+
 litellm_settings:
   drop_params: true
   modify_params: true
