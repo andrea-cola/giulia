@@ -24,9 +24,6 @@ startup. See `giulia_gateway/app.py` and `litellm-config.yaml` for details.
 |---|---|---|
 | `OPENAI_API_KEY` | _(none)_ | Enables OpenAI model passthrough |
 | `DB_IP_TYPE` | `private` | `private` or `public` for Cloud SQL |
-| `GCP_PROJECT` | _(none)_ | Alias for Pub/Sub project ID |
-| `PUBSUB_TOPIC` | _(none)_ | Pub/Sub topic for consumption logging |
-| `BQ_TABLE` | _(none)_ | BigQuery table for the logger Cloud Function |
 | `LITELLM_CONFIG` | `/app/litellm-config.yaml` | Path to model config |
 
 ## Running locally
