@@ -22,6 +22,7 @@ startup. See `giulia_gateway/app.py` and `litellm-config.yaml` for details.
 
 | Variable | Default | Description |
 |---|---|---|
+| `GATEWAY_API_KEY` | _(none)_ | Static API key accepted without a DB lookup |
 | `OPENAI_API_KEY` | _(none)_ | Enables OpenAI model passthrough |
 | `DB_IP_TYPE` | `private` | `private` or `public` for Cloud SQL |
 | `LITELLM_CONFIG` | `/app/litellm-config.yaml` | Path to model config |

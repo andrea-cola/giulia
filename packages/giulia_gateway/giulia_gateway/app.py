@@ -156,7 +156,10 @@ async def startup():
     """Initializes config, API-key pool, and OpenAI passthrough client."""
     global _openai_api_key, _openai_client
     _load_config()
-    await _init_key_pool()
+    if _GATEWAY_API_KEY:
+        logger.info("GATEWAY_API_KEY is set — skipping Cloud SQL API-key pool")
+    else:
+        await _init_key_pool()
     _openai_api_key = os.environ.get("OPENAI_API_KEY", "")
     if _openai_api_key:
         _openai_client = httpx.AsyncClient(
@@ -170,16 +173,27 @@ async def startup():
 
 @app.on_event("shutdown")
 async def shutdown():
-    await _close_key_pool()
+    if not _GATEWAY_API_KEY:
+        await _close_key_pool()
+
+
+_GATEWAY_API_KEY: str = os.environ.get("GATEWAY_API_KEY", "").strip()
 
 
 async def _verify_key(
     credentials: HTTPAuthorizationCredentials | None = Depends(security),
 ) -> str:
-    """Verify the incoming HTTP Bearer token against the api_keys table."""
+    """Verify the incoming HTTP Bearer token.
+
+    If GATEWAY_API_KEY is set and the token matches it, access is granted
+    immediately without a database round-trip.  Otherwise the key is verified
+    against the Cloud SQL api_keys table.
+    """
     if not credentials:
         raise HTTPException(status_code=401, detail="Missing API key")
     key = credentials.credentials
+    if _GATEWAY_API_KEY and key == _GATEWAY_API_KEY:
+        return key
     if not await verify_key(key):
         raise HTTPException(status_code=401, detail="Invalid or revoked API key")
     return key
