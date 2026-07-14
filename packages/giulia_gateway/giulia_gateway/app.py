@@ -94,9 +94,10 @@ _MODEL_VARIANT_KWARGS: dict[str, dict] = {
     "-high": {},
 }
 
-# Sonnet 5 on Vertex AI uses the "adaptive" thinking API with output_config.effort
-# instead of the "enabled" API with budget_tokens used by Opus models.
-_SONNET5_VARIANT_KWARGS: dict[str, dict] = {
+# Newer Claude models on Vertex AI (claude-opus-4-8+, claude-sonnet-5+) use the
+# "adaptive" thinking API with output_config.effort instead of the "enabled" API
+# with budget_tokens that older Opus models use.
+_ADAPTIVE_VARIANT_KWARGS: dict[str, dict] = {
     "-thinking-max": {
         "thinking": {"type": "adaptive"},
         "output_config": {"effort": "max"},
@@ -120,9 +121,11 @@ _SONNET5_VARIANT_KWARGS: dict[str, dict] = {
     "-medium": {},
 }
 
-# Map model-name prefixes to their specific variant-kwargs table.
+# Map model-name prefixes (canonical form) to their variant-kwargs table.
+# Prefixes are matched in order; first match wins.
 _MODEL_FAMILY_VARIANT_KWARGS: list[tuple[str, dict[str, dict]]] = [
-    ("claude-sonnet-5", _SONNET5_VARIANT_KWARGS),
+    ("claude-4.8-opus", _ADAPTIVE_VARIANT_KWARGS),
+    ("claude-sonnet-5", _ADAPTIVE_VARIANT_KWARGS),
 ]
 
 _ENV_VAR_RE = re.compile(r"\$\{([^}]+)\}")
