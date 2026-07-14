@@ -207,11 +207,44 @@ async def _verify_key(
     return key
 
 
+def _normalize_model_name(model_name: str) -> str:
+    """Translate legacy ``claude-opus-{ver}-{variant}`` names to the canonical
+    ``claude-{ver}-opus-{variant}`` format used in the config.
+
+    Cursor (and older clients) send names like ``claude-opus-4-8-thinking-high``
+    where the version uses dashes (``4-8``).  The gateway config uses dots
+    (``claude-4.8-opus-thinking-high``), so we need to rewrite the name.
+    """
+    if not model_name.startswith("claude-opus-"):
+        return model_name
+    rest = model_name[len("claude-opus-") :]
+    # Strip any known variant suffix so the remainder is the version string.
+    suffix = ""
+    for s in _MODEL_VARIANT_KWARGS:
+        if rest.endswith(s):
+            suffix = s
+            rest = rest[: -len(s)]
+            break
+    # ``rest`` is now the version part, e.g. ``4-8`` or ``4.8``.
+    # Normalise dash-separated digits to dot-separated (``4-8`` → ``4.8``).
+    version = re.sub(r"^(\d+)-(\d+)$", r"\1.\2", rest)
+    return f"claude-{version}-opus{suffix}"
+
+
 def _resolve_model_name(model_name: str) -> str:
     """Resolve a possibly-suffixed model name to a configured model name."""
     if model_name in _model_names:
         return model_name
+
+    normalized = _normalize_model_name(model_name)
+    if normalized != model_name and normalized in _model_names:
+        return normalized
+
     for suffix in _MODEL_VARIANT_KWARGS:
+        if normalized.endswith(suffix):
+            base = normalized[: -len(suffix)]
+            if base in _model_names:
+                return base
         if model_name.endswith(suffix):
             base = model_name[: -len(suffix)]
             if base in _model_names:
