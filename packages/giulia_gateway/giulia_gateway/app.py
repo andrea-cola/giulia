@@ -70,6 +70,7 @@ _config: dict[str, Any] = {}
 _model_names: set[str] = set()
 _router: Router | None = None
 
+# Default variant kwargs for Claude Opus models (use "enabled" thinking API).
 _MODEL_VARIANT_KWARGS: dict[str, dict] = {
     "-thinking-max": {
         "thinking": {"type": "enabled", "budget_tokens": 32768},
@@ -92,6 +93,37 @@ _MODEL_VARIANT_KWARGS: dict[str, dict] = {
     },
     "-high": {},
 }
+
+# Sonnet 5 on Vertex AI uses the "adaptive" thinking API with output_config.effort
+# instead of the "enabled" API with budget_tokens used by Opus models.
+_SONNET5_VARIANT_KWARGS: dict[str, dict] = {
+    "-thinking-max": {
+        "thinking": {"type": "adaptive"},
+        "output_config": {"effort": "max"},
+    },
+    "-thinking-high": {
+        "thinking": {"type": "adaptive"},
+        "output_config": {"effort": "high"},
+    },
+    "-thinking": {
+        "thinking": {"type": "adaptive"},
+        "output_config": {"effort": "high"},
+    },
+    "-xhigh": {
+        "thinking": {"type": "adaptive"},
+        "output_config": {"effort": "max"},
+    },
+    "-max": {
+        "output_config": {"effort": "max"},
+    },
+    "-high": {},
+    "-medium": {},
+}
+
+# Map model-name prefixes to their specific variant-kwargs table.
+_MODEL_FAMILY_VARIANT_KWARGS: list[tuple[str, dict[str, dict]]] = [
+    ("claude-sonnet-5", _SONNET5_VARIANT_KWARGS),
+]
 
 _ENV_VAR_RE = re.compile(r"\$\{([^}]+)\}")
 
@@ -253,9 +285,20 @@ def _resolve_model_name(model_name: str) -> str:
 
 
 def _variant_kwargs(model_name: str) -> dict:
-    """Return extra litellm kwargs for a model variant suffix."""
-    for suffix, kw in _MODEL_VARIANT_KWARGS.items():
-        if model_name.endswith(suffix):
+    """Return extra litellm kwargs for a model variant suffix.
+
+    Looks up the appropriate variant table based on the model family first,
+    then falls back to the default (Opus-style) table.
+    """
+    # Resolve the canonical name so family matching works even for legacy names.
+    canonical = _normalize_model_name(model_name)
+    table = _MODEL_VARIANT_KWARGS
+    for prefix, family_table in _MODEL_FAMILY_VARIANT_KWARGS:
+        if canonical.startswith(prefix):
+            table = family_table
+            break
+    for suffix, kw in table.items():
+        if canonical.endswith(suffix) or model_name.endswith(suffix):
             return dict(kw)
     return {}
 
@@ -488,10 +531,16 @@ async def chat_completions(request: Request, _: str = Depends(_verify_key)):
     max_tokens = data.get("max_tokens") or data.get("max_completion_tokens") or 16384
     temperature = data.get("temperature")
 
-    thinking_budget = extra.get("thinking", {}).get("budget_tokens", 0)
+    thinking_cfg = extra.get("thinking", {})
+    thinking_budget = thinking_cfg.get("budget_tokens", 0)
+    thinking_enabled = thinking_cfg.get("type") in ("enabled", "adaptive")
     if thinking_budget:
         if max_tokens <= thinking_budget:
             max_tokens = thinking_budget + 4096
+        temperature = 1.0
+    elif thinking_enabled:
+        # Adaptive thinking (e.g. Sonnet 5) — no budget_tokens but still needs
+        # temperature = 1.0 as required by the Anthropic/Vertex thinking API.
         temperature = 1.0
 
     kwargs = {
