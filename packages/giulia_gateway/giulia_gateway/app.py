@@ -13,6 +13,7 @@ import json
 import os
 import re
 import uuid
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any, cast
 
@@ -40,8 +41,9 @@ from giulia_gateway.request_cleaner import (
 setup_logging()
 logger = get_logger("app")
 
-security = HTTPBearer(auto_error=False)
-app = FastAPI(title="Giulia LLM Gateway")
+_GATEWAY_API_KEY: str = os.environ.get("GATEWAY_API_KEY", "").strip()
+
+# ── OpenAI passthrough ────────────────────────────────────────────────────────
 
 OPENAI_API_BASE = "https://api.openai.com/v1"
 OPENAI_PASSTHROUGH_PREFIXES = (
@@ -66,7 +68,8 @@ OPENAI_PASSTHROUGH_PREFIXES = (
 _openai_api_key: str = ""
 _openai_client: httpx.AsyncClient | None = None
 
-_config: dict[str, Any] = {}
+# ── Router / model config ────────────────────────────────────────────────────
+
 _model_names: set[str] = set()
 _router: Router | None = None
 
@@ -135,7 +138,7 @@ _MODEL_FAMILY_VARIANT_KWARGS: list[tuple[str, dict[str, dict]]] = [
 _ENV_VAR_RE = re.compile(r"\$\{([^}]+)\}")
 
 
-def _expand_env_vars(obj):
+def _expand_env_vars(obj: Any) -> Any:
     """Recursively expand ${VAR} placeholders in strings within a parsed YAML structure."""
     if isinstance(obj, str):
         return _ENV_VAR_RE.sub(lambda m: os.environ.get(m.group(1), m.group(0)), obj)
@@ -159,7 +162,7 @@ def _load_config() -> None:
     at load time so deployment-specific values (e.g. ``VERTEX_PROJECT``) can
     be injected without baking them into the config file.
     """
-    global _config, _model_names, _router
+    global _model_names, _router
     config_path = os.environ.get(
         "LITELLM_CONFIG",
         os.environ.get("CONFIG_PATH", "/app/litellm-config.yaml"),
@@ -179,14 +182,13 @@ def _load_config() -> None:
         logger.warning(
             "No config file found at %s; model_list will be empty", config_path
         )
-        _config = {}
         _model_names = set()
         return
 
     with open(path) as f:
         raw = yaml.safe_load(f) or {}
-    _config = cast(dict[str, Any], _expand_env_vars(raw))
-    model_list = _config.get("model_list", [])
+    config = cast(dict[str, Any], _expand_env_vars(raw))
+    model_list = config.get("model_list", [])
     _model_names = {e["model_name"] for e in model_list if e.get("model_name")}
 
     _router = Router(model_list=model_list, routing_strategy="simple-shuffle")
@@ -198,9 +200,9 @@ def _load_config() -> None:
     )
 
 
-@app.on_event("startup")
-async def startup():
-    """Initializes config, API-key pool, and OpenAI passthrough client."""
+@asynccontextmanager
+async def _lifespan(_app: FastAPI):
+    """Initialise config, the API-key pool, and the OpenAI passthrough client on startup."""
     global _openai_api_key, _openai_client
     _load_config()
     if _GATEWAY_API_KEY:
@@ -217,14 +219,14 @@ async def startup():
     else:
         logger.warning("OPENAI_API_KEY not set — OpenAI model passthrough disabled")
 
+    yield
 
-@app.on_event("shutdown")
-async def shutdown():
     if not _GATEWAY_API_KEY:
         await _close_key_pool()
 
 
-_GATEWAY_API_KEY: str = os.environ.get("GATEWAY_API_KEY", "").strip()
+security = HTTPBearer(auto_error=False)
+app = FastAPI(title="Giulia LLM Gateway", lifespan=_lifespan)
 
 
 async def _verify_key(
@@ -233,7 +235,7 @@ async def _verify_key(
     """Verify the incoming HTTP Bearer token.
 
     If GATEWAY_API_KEY is set and the token matches it, access is granted
-    immediately without a database round-trip.  Otherwise the key is verified
+    immediately without a database round-trip. Otherwise the key is verified
     against the Cloud SQL api_keys table.
     """
     if not credentials:
@@ -251,7 +253,7 @@ def _normalize_model_name(model_name: str) -> str:
     ``claude-{ver}-opus-{variant}`` format used in the config.
 
     Cursor (and older clients) send names like ``claude-opus-4-8-thinking-high``
-    where the version uses dashes (``4-8``).  The gateway config uses dots
+    where the version uses dashes (``4-8``). The gateway config uses dots
     (``claude-4.8-opus-thinking-high``), so we need to rewrite the name.
     """
     if not model_name.startswith("claude-opus-"):
@@ -308,6 +310,9 @@ def _variant_kwargs(model_name: str) -> dict:
         if canonical.endswith(suffix) or model_name.endswith(suffix):
             return dict(kw)
     return {}
+
+
+# ── Routes ────────────────────────────────────────────────────────────────────
 
 
 @app.get("/health")
@@ -448,7 +453,7 @@ async def _multi_call_prepare(
     history: list[dict],
     tail: list[dict],
     tools: list | None = None,
-    system=None,
+    system: Any = None,
 ) -> tuple[str, str]:
     """Run condensation and generation in parallel via the condensation model."""
     condense_req = build_condensation_request(history)

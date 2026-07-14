@@ -30,6 +30,8 @@ from giulia_gateway.logging_config import get_logger
 
 logger = get_logger("api_keys")
 
+# ── Configuration ─────────────────────────────────────────────────────────────
+
 
 def _require_env(name: str) -> str:
     """Return the value of a required environment variable, or raise."""
@@ -87,6 +89,8 @@ def _proxy_connect_args() -> tuple[str, int, str, bool] | None:
     )
     return host, port, password, ssl_on
 
+
+# ── Connection pool ───────────────────────────────────────────────────────────
 
 CACHE_TTL_SECONDS = 300
 
@@ -173,6 +177,9 @@ async def close_pool() -> None:
         await _connector.close_async()
         _connector = None
     logger.info("API-key pool closed")
+
+
+# ── Key verification ──────────────────────────────────────────────────────────
 
 
 async def verify_key(key: str) -> bool:

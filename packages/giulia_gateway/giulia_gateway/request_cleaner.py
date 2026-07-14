@@ -1,13 +1,24 @@
 """
-Request cleaning for Cursor/Vertex AI compatibility.
+Request cleaning and context-window management for Vertex AI compatibility.
 
-Shared by the HTTP proxy and the FastAPI app. Removes orphaned
-tool_result blocks, tool_choice, and other params/headers that Vertex AI rejects.
-Also trims overly long conversations to stay within model context limits.
+Used by the FastAPI app (``app.py``) to prepare incoming Cursor requests
+before they're forwarded to Vertex AI. Two independent responsibilities
+live here:
+
+1. **Format cleaning** — convert Anthropic-style ``tool_use``/``tool_result``
+   blocks to OpenAI format, drop orphaned tool results, and strip
+   parameters/keys that Vertex AI rejects.
+2. **Context-window condensation** — when a conversation is too long for the
+   target model, summarise the older messages with a cheap model and keep a
+   fresh generation draft, so the final model receives a compact prompt
+   without losing earlier context.
 """
 
 import json
 import logging
+from typing import Any
+
+# ── Format cleaning ──────────────────────────────────────────────────────────
 
 # Parameters to remove from requests (incompatible with Vertex AI).
 # Note: thinking / reasoning_effort / extended_thinking / budget_tokens are
@@ -29,22 +40,17 @@ THINKING_PARAMS = [
 RECURSIVE_STRIP_KEYS = {"google", "thinking", "extended_thinking", "budget_tokens"}
 
 
-def remove_blocked_keys_recursive(obj):
-    """Recursively remove google, thinking, and other blocked keys from any nested structure."""
+def remove_blocked_keys(obj: Any) -> Any:
+    """Recursively remove blocked keys (``google``, ``thinking``, etc.) from any nested structure."""
     if isinstance(obj, dict):
         for key in RECURSIVE_STRIP_KEYS:
             obj.pop(key, None)
         for value in list(obj.values()):
-            remove_blocked_keys_recursive(value)
+            remove_blocked_keys(value)
     elif isinstance(obj, list):
         for item in obj:
-            remove_blocked_keys_recursive(item)
+            remove_blocked_keys(item)
     return obj
-
-
-def remove_blocked_keys(obj):
-    """Recursively remove blocked keys (google, thinking, etc.) from any nested structure."""
-    return remove_blocked_keys_recursive(obj)
 
 
 def extract_tool_use_ids(message: dict) -> set:
@@ -120,9 +126,10 @@ def convert_image_to_openai(item: dict) -> dict:
 
 
 def clean_messages(messages: list, logger: logging.Logger) -> list:
-    """
-    Clean messages to be compatible with LiteLLM and Vertex AI Claude.
-    Converts Anthropic-style tool_use/tool_result to OpenAI format and removes orphaned tool_result blocks.
+    """Clean messages to be compatible with LiteLLM and Vertex AI Claude.
+
+    Converts Anthropic-style tool_use/tool_result to OpenAI format and
+    removes orphaned tool_result blocks.
     """
     cleaned = []
     pending_tool_ids = set()
@@ -233,7 +240,7 @@ def clean_messages(messages: list, logger: logging.Logger) -> list:
     return cleaned
 
 
-# ── Token estimation ─────────────────────────────────────────────────────────
+# ── Context-window condensation ──────────────────────────────────────────────
 
 CHARS_PER_TOKEN = 4  # conservative estimate; real ratio is ~3.5 for English
 
@@ -255,7 +262,7 @@ def context_limit_for_model(model_name: str) -> int:
     return DEFAULT_CONTEXT_LIMIT
 
 
-def estimate_tokens(obj) -> int:
+def estimate_tokens(obj: Any) -> int:
     """Fast approximate token count based on serialised JSON length."""
     if isinstance(obj, str):
         return max(1, len(obj) // CHARS_PER_TOKEN)
@@ -263,7 +270,7 @@ def estimate_tokens(obj) -> int:
 
 
 def estimate_messages_tokens(
-    messages: list, tools: list | None = None, system=None
+    messages: list, tools: list | None = None, system: Any = None
 ) -> int:
     """Estimate total token count for the full request payload."""
     total = sum(estimate_tokens(msg) for msg in messages)
@@ -279,7 +286,7 @@ def split_for_condensation(
     max_tokens: int,
     logger: logging.Logger,
     tools: list | None = None,
-    system=None,
+    system: Any = None,
 ) -> tuple[list[dict], list[dict]] | None:
     """Decide whether condensation is needed and split messages into (history, tail).
 
@@ -421,7 +428,7 @@ def build_condensation_request(history: list[dict]) -> dict:
 def build_generation_request(
     all_messages: list[dict],
     tools: list | None = None,
-    system=None,
+    system: Any = None,
 ) -> dict:
     """Build a request for the large-context model to generate a full draft response."""
     gen_messages: list[dict] = [
@@ -523,45 +530,6 @@ def _messages_to_text(messages: list[dict]) -> str:
     return "\n\n".join(parts)
 
 
-def inject_summary_into_messages(
-    summary: str,
-    tail: list[dict],
-    logger: logging.Logger,
-) -> list[dict]:
-    """Prepend a condensed-history user message before the tail messages."""
-    summary_msg = {
-        "role": "user",
-        "content": (
-            "[Condensed conversation history — the earlier messages in this chat "
-            "have been automatically summarised to fit the context window.]\n\n"
-            + summary
-        ),
-    }
-    ack_msg = {
-        "role": "assistant",
-        "content": (
-            "Understood. I have the condensed history of our earlier conversation "
-            "and will continue with full awareness of the prior context."
-        ),
-    }
-    result = []
-    for msg in tail:
-        if isinstance(msg, dict) and msg.get("role") == "system":
-            result.append(msg)
-    result.extend([summary_msg, ack_msg])
-    for msg in tail:
-        if not (isinstance(msg, dict) and msg.get("role") == "system"):
-            result.append(msg)
-
-    logger.info(
-        "Injected condensed summary (%d chars) + %d tail messages = %d total messages",
-        len(summary),
-        len(tail),
-        len(result),
-    )
-    return result
-
-
 def inject_draft_into_messages(
     draft: str,
     summary: str,
@@ -628,18 +596,18 @@ def inject_draft_into_messages(
 
 
 def process_request_body(data: dict, logger: logging.Logger) -> dict:
-    """
-    Process and clean the request body for Vertex AI compatibility.
+    """Process and clean the request body for Vertex AI compatibility.
+
     Returns the modified request data.
     """
     logger.debug("Original data: %s", json.dumps(data, indent=2)[:2000])
-    remove_blocked_keys_recursive(data)
+    remove_blocked_keys(data)
     for param in BLOCKED_PARAMS + THINKING_PARAMS:
         if param in data:
             logger.debug("Removing parameter: %s", param)
             del data[param]
     if "system" in data:
-        remove_blocked_keys_recursive(data["system"])
+        remove_blocked_keys(data["system"])
     if "messages" in data:
         original_count = len(data["messages"])
         data["messages"] = clean_messages(data["messages"], logger)
