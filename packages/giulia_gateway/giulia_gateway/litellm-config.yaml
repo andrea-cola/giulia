@@ -1,0 +1,380 @@
+# LiteLLM Router configuration for the Giulia Gateway.
+#
+# Every deployment points at a Vertex AI model. `vertex_project` and
+# `drop_params` are identical across all entries, so they are factored out
+# into the `&defaults` anchor and merged into each `litellm_params` block
+# with `<<: *defaults`.
+#
+# Models with two entries for the same `model_name` (one per
+# `vertex_location`) are intentional: the LiteLLM Router load-balances
+# across them (routing_strategy="simple-shuffle" in app.py), which spreads
+# traffic across regions and doubles the effective quota for that model.
+x-defaults: &defaults
+  vertex_project: "${VERTEX_PROJECT}"
+  drop_params: true
+
+model_list:
+  # ── Gemini ────────────────────────────────────────────────────────────
+  - model_name: gemini-2.5-flash
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/gemini-2.5-flash
+      vertex_location: "europe-west1"
+
+  - model_name: gemini-3-flash-preview
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/gemini-3-flash-preview
+      vertex_location: "global"
+
+  - model_name: gemini-3-pro-preview
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/gemini-3-pro-preview
+      vertex_location: "global"
+
+  - model_name: gemini-3.1-pro-preview
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/gemini-3.1-pro-preview
+      vertex_location: "global"
+
+  # ── Claude 4.5 Opus (single-region only) ────────────────────────────────
+  - model_name: claude-4.5-opus-high
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-5
+      vertex_location: "global"
+
+  - model_name: claude-4.5-opus-max
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-5
+      vertex_location: "global"
+
+  - model_name: claude-4.5-opus-thinking
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-5
+      vertex_location: "global"
+
+  - model_name: claude-4.5-opus-thinking-high
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-5
+      vertex_location: "global"
+
+  - model_name: claude-4.5-opus-thinking-max
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-5
+      vertex_location: "global"
+
+  - model_name: claude-4.5-opus-xhigh
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-5
+      vertex_location: "global"
+
+  # ── Claude 4.6 Opus (load-balanced across global + europe-west1) ───────
+  - model_name: claude-4.6-opus-xhigh
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-6
+      vertex_location: "global"
+
+  - model_name: claude-4.6-opus-xhigh
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-6
+      vertex_location: "europe-west1"
+
+  - model_name: claude-4.6-opus-high
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-6
+      vertex_location: "global"
+
+  - model_name: claude-4.6-opus-max
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-6
+      vertex_location: "global"
+
+  - model_name: claude-4.6-opus-max
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-6
+      vertex_location: "europe-west1"
+
+  - model_name: claude-4.6-opus-thinking
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-6
+      vertex_location: "global"
+
+  - model_name: claude-4.6-opus-thinking
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-6
+      vertex_location: "europe-west1"
+
+  - model_name: claude-4.6-opus-thinking-high
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-6
+      vertex_location: "global"
+
+  - model_name: claude-4.6-opus-thinking-high
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-6
+      vertex_location: "europe-west1"
+
+  - model_name: claude-4.6-opus-thinking-max
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-6
+      vertex_location: "global"
+
+  - model_name: claude-4.6-opus-thinking-max
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-6
+      vertex_location: "europe-west1"
+
+  # ── Claude 4.6 Sonnet ────────────────────────────────────────────────────
+  - model_name: claude-4.6-sonnet-medium
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-sonnet-4-6
+      vertex_location: "global"
+
+  - model_name: claude-4.6-sonnet-medium
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-sonnet-4-6
+      vertex_location: "europe-west1"
+
+  # ── Claude 4.7 Opus (load-balanced across global + europe-west1) ───────
+  - model_name: claude-4.7-opus-xhigh
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-7
+      vertex_location: "global"
+
+  - model_name: claude-4.7-opus-xhigh
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-7
+      vertex_location: "europe-west1"
+
+  - model_name: claude-4.7-opus-high
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-7
+      vertex_location: "global"
+
+  - model_name: claude-4.7-opus-max
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-7
+      vertex_location: "global"
+
+  - model_name: claude-4.7-opus-max
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-7
+      vertex_location: "europe-west1"
+
+  - model_name: claude-4.7-opus-thinking
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-7
+      vertex_location: "global"
+
+  - model_name: claude-4.7-opus-thinking
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-7
+      vertex_location: "europe-west1"
+
+  - model_name: claude-4.7-opus-thinking-high
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-7
+      vertex_location: "global"
+
+  - model_name: claude-4.7-opus-thinking-high
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-7
+      vertex_location: "europe-west1"
+
+  - model_name: claude-4.7-opus-thinking-max
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-7
+      vertex_location: "global"
+
+  - model_name: claude-4.7-opus-thinking-max
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-7
+      vertex_location: "europe-west1"
+
+  # ── Claude 4.8 Opus (load-balanced across global + europe-west1) ───────
+  - model_name: claude-4.8-opus-xhigh
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-8
+      vertex_location: "global"
+
+  - model_name: claude-4.8-opus-xhigh
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-8
+      vertex_location: "europe-west1"
+
+  - model_name: claude-4.8-opus-high
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-8
+      vertex_location: "global"
+
+  - model_name: claude-4.8-opus-max
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-8
+      vertex_location: "global"
+
+  - model_name: claude-4.8-opus-max
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-8
+      vertex_location: "europe-west1"
+
+  - model_name: claude-4.8-opus-thinking
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-8
+      vertex_location: "global"
+
+  - model_name: claude-4.8-opus-thinking
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-8
+      vertex_location: "europe-west1"
+
+  - model_name: claude-4.8-opus-thinking-high
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-8
+      vertex_location: "global"
+
+  - model_name: claude-4.8-opus-thinking-high
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-8
+      vertex_location: "europe-west1"
+
+  - model_name: claude-4.8-opus-thinking-max
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-8
+      vertex_location: "global"
+
+  - model_name: claude-4.8-opus-thinking-max
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-opus-4-8
+      vertex_location: "europe-west1"
+
+  # ── Claude Sonnet 5 (load-balanced across global + europe-west1) ───────
+  - model_name: claude-sonnet-5-xhigh
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-sonnet-5
+      vertex_location: "global"
+
+  - model_name: claude-sonnet-5-xhigh
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-sonnet-5
+      vertex_location: "europe-west1"
+
+  - model_name: claude-sonnet-5-medium
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-sonnet-5
+      vertex_location: "global"
+
+  - model_name: claude-sonnet-5-medium
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-sonnet-5
+      vertex_location: "europe-west1"
+
+  - model_name: claude-sonnet-5-high
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-sonnet-5
+      vertex_location: "global"
+
+  - model_name: claude-sonnet-5-high
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-sonnet-5
+      vertex_location: "europe-west1"
+
+  - model_name: claude-sonnet-5-max
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-sonnet-5
+      vertex_location: "global"
+
+  - model_name: claude-sonnet-5-max
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-sonnet-5
+      vertex_location: "europe-west1"
+
+  - model_name: claude-sonnet-5-thinking
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-sonnet-5
+      vertex_location: "global"
+
+  - model_name: claude-sonnet-5-thinking
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-sonnet-5
+      vertex_location: "europe-west1"
+
+  - model_name: claude-sonnet-5-thinking-high
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-sonnet-5
+      vertex_location: "global"
+
+  - model_name: claude-sonnet-5-thinking-high
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-sonnet-5
+      vertex_location: "europe-west1"
+
+  - model_name: claude-sonnet-5-thinking-max
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-sonnet-5
+      vertex_location: "global"
+
+  - model_name: claude-sonnet-5-thinking-max
+    litellm_params:
+      <<: *defaults
+      model: vertex_ai/claude-sonnet-5
+      vertex_location: "europe-west1"
+
+litellm_settings:
+  drop_params: true
+  modify_params: true

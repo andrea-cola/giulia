@@ -6,6 +6,7 @@
 members = [
     "packages/giulia",
     "packages/giulia_cli",
+    "packages/giulia_gateway",
     "packages/giulia_sdk",
 ]
 
