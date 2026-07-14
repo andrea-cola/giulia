@@ -123,7 +123,11 @@ _ADAPTIVE_VARIANT_KWARGS: dict[str, dict] = {
 
 # Map model-name prefixes (canonical form) to their variant-kwargs table.
 # Prefixes are matched in order; first match wins.
+# claude-4.7-opus is included proactively: Vertex AI is migrating all newer
+# Claude models away from "thinking.type.enabled" toward "thinking.type.adaptive",
+# and 4.7 is expected to follow the same pattern as 4.8 and sonnet-5.
 _MODEL_FAMILY_VARIANT_KWARGS: list[tuple[str, dict[str, dict]]] = [
+    ("claude-4.7-opus", _ADAPTIVE_VARIANT_KWARGS),
     ("claude-4.8-opus", _ADAPTIVE_VARIANT_KWARGS),
     ("claude-sonnet-5", _ADAPTIVE_VARIANT_KWARGS),
 ]
