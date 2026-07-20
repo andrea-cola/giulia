@@ -43,6 +43,71 @@ logger = get_logger("app")
 
 _GATEWAY_API_KEY: str = os.environ.get("GATEWAY_API_KEY", "").strip()
 
+# Optional extra namespace prefix applied to every configured model name.
+# Model names are primarily distinguished from Cursor's built-in slugs via the
+# family codenames below (e.g. ``claude`` → ``giulia``); this prefix is an
+# additional opt-in namespace, disabled by default. Set it (e.g. ``giulia-``)
+# if you also want families without a codename (like Gemini) to stay distinct.
+GATEWAY_MODEL_PREFIX: str = os.environ.get("GATEWAY_MODEL_PREFIX", "").strip()
+
+
+def _apply_gateway_prefix(model_name: str) -> str:
+    """Prefix *model_name* with the gateway namespace (idempotent)."""
+    if GATEWAY_MODEL_PREFIX and not model_name.startswith(GATEWAY_MODEL_PREFIX):
+        return f"{GATEWAY_MODEL_PREFIX}{model_name}"
+    return model_name
+
+
+def _strip_gateway_prefix(model_name: str) -> str:
+    """Remove the gateway namespace prefix from *model_name* if present."""
+    if GATEWAY_MODEL_PREFIX and model_name.startswith(GATEWAY_MODEL_PREFIX):
+        return model_name[len(GATEWAY_MODEL_PREFIX) :]
+    return model_name
+
+
+# Codename aliases for model families. Each family word in a model name is
+# swapped for a codename so the public names read as e.g.
+# ``giulia-4.8-leonardo-thinking-high`` instead of exposing the real family and
+# without colliding with Cursor's built-in slugs. Everything else in the name
+# (version, variant suffix) is left untouched. Mapping is canonical → codename;
+# the reverse resolves incoming requests back to the configured model.
+_MODEL_ALIASES: dict[str, str] = {
+    "claude": "giulia",
+    "opus": "leonardo",
+    "sonnet": "raptor",
+}
+_MODEL_ALIASES_REVERSE: dict[str, str] = {v: k for k, v in _MODEL_ALIASES.items()}
+
+
+def _replace_segments(model_name: str, mapping: dict[str, str]) -> str:
+    """Replace whole dash-delimited segments of *model_name* using *mapping*.
+
+    Segment-based replacement avoids accidental substring matches (e.g. it
+    only touches the ``opus`` token, never a version or other word).
+    """
+    return "-".join(mapping.get(seg, seg) for seg in model_name.split("-"))
+
+
+def _aliasize(model_name: str) -> str:
+    """Rewrite family words to their codenames (``opus`` → ``leonardo``)."""
+    return _replace_segments(model_name, _MODEL_ALIASES)
+
+
+def _dealiasize(model_name: str) -> str:
+    """Rewrite codenames back to family words (``leonardo`` → ``opus``)."""
+    return _replace_segments(model_name, _MODEL_ALIASES_REVERSE)
+
+
+def _to_public_name(canonical: str) -> str:
+    """Turn a bare canonical model name into its public (aliased, prefixed) form."""
+    return _apply_gateway_prefix(_aliasize(canonical))
+
+
+def _to_canonical_name(model_name: str) -> str:
+    """Reduce a public/legacy model name to its bare canonical form."""
+    return _normalize_model_name(_dealiasize(_strip_gateway_prefix(model_name)))
+
+
 # ── OpenAI passthrough ────────────────────────────────────────────────────────
 
 OPENAI_API_BASE = "https://api.openai.com/v1"
@@ -150,8 +215,12 @@ def _expand_env_vars(obj: Any) -> Any:
 
 
 def _is_openai_model(model: str) -> bool:
-    """Return True if the model should be forwarded to the OpenAI API."""
-    m = model.lower()
+    """Return True if the model should be forwarded to the OpenAI API.
+
+    The gateway namespace prefix (if any) is stripped first so both
+    ``gpt-5`` and ``giulia-gpt-5`` are recognised as OpenAI passthrough models.
+    """
+    m = _strip_gateway_prefix(model).lower()
     return m.startswith(OPENAI_PASSTHROUGH_PREFIXES)
 
 
@@ -189,6 +258,12 @@ def _load_config() -> None:
         raw = yaml.safe_load(f) or {}
     config = cast(dict[str, Any], _expand_env_vars(raw))
     model_list = config.get("model_list", [])
+    # Rewrite every configured model to its public form (family codename +
+    # namespace prefix) so it doesn't shadow Cursor's built-in slugs. The
+    # router then load-balances and routes on this public name.
+    for entry in model_list:
+        if entry.get("model_name"):
+            entry["model_name"] = _to_public_name(entry["model_name"])
     _model_names = {e["model_name"] for e in model_list if e.get("model_name")}
 
     _router = Router(model_list=model_list, routing_strategy="simple-shuffle")
@@ -273,23 +348,32 @@ def _normalize_model_name(model_name: str) -> str:
 
 
 def _resolve_model_name(model_name: str) -> str:
-    """Resolve a possibly-suffixed model name to a configured model name."""
+    """Resolve an incoming model name to a configured (prefixed) model name.
+
+    Handles all of these input forms and maps them onto the configured public
+    entry (e.g. ``giulia-4.8-leonardo-thinking-high``):
+
+    * the public codename name (what Cursor sends once registered)
+    * the bare canonical name (``claude-4.8-opus-thinking-high``)
+    * the legacy dashed-version name (``claude-opus-4-8-thinking-high``)
+    * any of the above with an unknown variant suffix to strip
+    """
     if model_name in _model_names:
         return model_name
 
-    normalized = _normalize_model_name(model_name)
-    if normalized != model_name and normalized in _model_names:
-        return normalized
+    # Reduce to the bare canonical core (no prefix, codenames reverted, dashed
+    # version normalised to dots), then try public and bare candidates.
+    core = _to_canonical_name(model_name)
+    for cand in (_to_public_name(core), core):
+        if cand in _model_names:
+            return cand
 
     for suffix in _MODEL_VARIANT_KWARGS:
-        if normalized.endswith(suffix):
-            base = normalized[: -len(suffix)]
-            if base in _model_names:
-                return base
-        if model_name.endswith(suffix):
-            base = model_name[: -len(suffix)]
-            if base in _model_names:
-                return base
+        if core.endswith(suffix):
+            base = core[: -len(suffix)]
+            for cand in (_to_public_name(base), base):
+                if cand in _model_names:
+                    return cand
     return model_name
 
 
@@ -299,8 +383,9 @@ def _variant_kwargs(model_name: str) -> dict:
     Looks up the appropriate variant table based on the model family first,
     then falls back to the default (Opus-style) table.
     """
-    # Resolve the canonical name so family matching works even for legacy names.
-    canonical = _normalize_model_name(model_name)
+    # Resolve to the bare canonical name (prefix stripped, codenames reverted)
+    # so family matching works even for public, legacy, and namespaced names.
+    canonical = _to_canonical_name(model_name)
     table = _MODEL_VARIANT_KWARGS
     for prefix, family_table in _MODEL_FAMILY_VARIANT_KWARGS:
         if canonical.startswith(prefix):
@@ -372,8 +457,12 @@ async def _openai_passthrough(
         )
 
     model = body.get("model", "?")
+    # Forward the real OpenAI model id, not the gateway-namespaced alias.
+    real_model = _strip_gateway_prefix(model)
+    if real_model != model:
+        body = {**body, "model": real_model}
     endpoint = _detect_openai_endpoint(body, request.url.path)
-    logger.info("OpenAI passthrough → %s  endpoint=%s", model, endpoint)
+    logger.info("OpenAI passthrough → %s  endpoint=%s", real_model, endpoint)
 
     headers = {
         "Authorization": f"Bearer {_openai_api_key}",
@@ -436,9 +525,16 @@ async def responses_passthrough(request: Request, _: str = Depends(_verify_key))
 
 
 async def _llm_call(req: dict) -> str:
-    """Make a single LLM call via the router and return the text content."""
+    """Make a single LLM call via the router and return the text content.
+
+    The request's model name is resolved to its configured (namespaced) form
+    so internal calls using bare names (e.g. the condensation model
+    ``gemini-2.5-flash``) route correctly.
+    """
     if _router is None:
         raise RuntimeError("Router not initialised")
+    req = dict(req)
+    req["model"] = _resolve_model_name(req.get("model", ""))
     response = await _router.acompletion(**req)
     if hasattr(response, "choices") and response.choices:
         return response.choices[0].message.content or ""
@@ -521,7 +617,7 @@ async def chat_completions(request: Request, _: str = Depends(_verify_key)):
     tools = data.get("tools")
     system = data.get("system")
 
-    max_ctx = context_limit_for_model(model_name)
+    max_ctx = context_limit_for_model(_to_canonical_name(model_name))
     split = split_for_condensation(
         messages, max_ctx, logger, tools=tools, system=system
     )
